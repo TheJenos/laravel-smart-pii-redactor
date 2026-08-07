@@ -1,6 +1,6 @@
 <?php
 
-// config for TheJenos/LaravelSmartPiiRedactor
+// config for TheJenos/SmartPiiRedactor
 return [
 
 ];

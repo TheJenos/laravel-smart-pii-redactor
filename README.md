@@ -52,8 +52,8 @@ php artisan vendor:publish --tag="laravel-smart-pii-redactor-views"
 ## Usage
 
 ```php
-$laravelSmartPiiRedactor = new TheJenos\LaravelSmartPiiRedactor();
-echo $laravelSmartPiiRedactor->echoPhrase('Hello, TheJenos!');
+$smartPiiRedactor = new TheJenos\SmartPiiRedactor();
+echo $smartPiiRedactor->echoPhrase('Hello, TheJenos!');
 ```
 
 ## Testing

@@ -1,6 +1,6 @@
 <?php
 
-namespace TheJenos\LaravelSmartPiiRedactor\Database\Factories;
+namespace TheJenos\SmartPiiRedactor\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
