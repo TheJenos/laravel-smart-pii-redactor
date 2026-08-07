@@ -95,7 +95,7 @@ class SmartPiiRedactor
         $dest = Vendor::defaultLib();
         if (file_exists($dest)) {
             echo "✔ MITIE found\n";
-        } else if (getenv('SKIP_MODEL_DOWNLOAD') != 1) {
+        } elseif (getenv('SKIP_MODEL_DOWNLOAD') != 1) {
             Vendor::check();
         }
 
@@ -105,13 +105,15 @@ class SmartPiiRedactor
         // Skip download and extraction if ner_model.dat already exists
         if (file_exists($destinationPath)) {
             echo "✔ Model file already exists. Skipping download and extraction.\n";
+
             return true;
         } else {
             echo "✘ Model file not found.\n";
         }
 
-        if(getenv('SKIP_MODEL_DOWNLOAD') == 1){
+        if (getenv('SKIP_MODEL_DOWNLOAD') == 1) {
             echo "✔ Skipping model download because SKIP_MODEL_DOWNLOAD is set.\n";
+
             return false;
         }
 
@@ -129,6 +131,7 @@ class SmartPiiRedactor
                 }
                 if (! copy($modelPath, $destinationPath)) {
                     echo "✘ Failed to copy model file to Models\n";
+
                     return false;
                 }
                 $found = true;
@@ -139,6 +142,7 @@ class SmartPiiRedactor
 
         if (! $found) {
             echo "✘ Could not find model file in extracted files.\n";
+
             return false;
         }
 
@@ -147,6 +151,7 @@ class SmartPiiRedactor
         @unlink(isset($tarPath) ? $tarPath : null);
 
         echo "✔ Model download and setup completed.\n";
+
         return true;
     }
 }
