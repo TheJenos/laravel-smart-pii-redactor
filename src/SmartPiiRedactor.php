@@ -92,51 +92,26 @@ class SmartPiiRedactor
 
     public static function check(): bool
     {
-        Vendor::check();
+        $dest = Vendor::defaultLib();
+        if (file_exists($dest)) {
+            echo "✔ MITIE found\n";
+        } else if (getenv('SKIP_MODEL_DOWNLOAD') != 1) {
+            Vendor::check();
+        }
 
         $destinationDir = __DIR__.'/Models';
         $destinationPath = $destinationDir.'/ner_model.dat';
 
-        echo 'Destination directory: '.$destinationDir."\n";
-
         // Skip download and extraction if ner_model.dat already exists
         if (file_exists($destinationPath)) {
-            echo "ner_model.dat already exists. Skipping download and extraction.\n";
-
+            echo "✔ Model file already exists. Skipping download and extraction.\n";
             return true;
+        } else {
+            echo "✘ Model file not found.\n";
         }
 
-        echo "Checking for MITIE-models-v0.2.tar.bz2...\n";
-
-        $url = 'https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2';
-
-        // Use a writable directory for the downloaded file and extraction
-        $baseDir = sys_get_temp_dir();
-        $tmpFile = $baseDir.DIRECTORY_SEPARATOR.'mitie_models.tar.bz2';
-        $tmpExtractedDir = $baseDir.DIRECTORY_SEPARATOR.'mitie_models_extract';
-
-        // Download the file
-        $fileData = file_get_contents($url);
-        if ($fileData === false) {
-            echo 'Failed to download model from '.$url."\n";
-
-            return false;
-        }
-        file_put_contents($tmpFile, $fileData);
-
-        // Extract the bz2 (tar.bz2)
-        $phar = new \PharData($tmpFile);
-        try {
-            $phar->decompress(); // creates tar
-            $tarPath = substr($tmpFile, 0, -4); // remove .bz2
-            $tar = new \PharData($tarPath);
-            if (! is_dir($tmpExtractedDir)) {
-                mkdir($tmpExtractedDir, 0755, true);
-            }
-            $tar->extractTo($tmpExtractedDir, null, true);
-        } catch (\Exception $e) {
-            echo 'Error extracting tar.bz2: '.$e->getMessage()."\n";
-
+        if(getenv('SKIP_MODEL_DOWNLOAD') == 1){
+            echo "✔ Skipping model download because SKIP_MODEL_DOWNLOAD is set.\n";
             return false;
         }
 
@@ -145,6 +120,7 @@ class SmartPiiRedactor
             $tmpExtractedDir.'/english/ner_model.dat',
             $tmpExtractedDir.'/MITIE-models/english/ner_model.dat',
         ];
+
         $found = false;
         foreach ($possibleModelLocations as $modelPath) {
             if (file_exists($modelPath)) {
@@ -152,19 +128,17 @@ class SmartPiiRedactor
                     mkdir($destinationDir, 0755, true);
                 }
                 if (! copy($modelPath, $destinationPath)) {
-                    echo "Failed to copy ner_model.dat to Models\n";
-
+                    echo "✘ Failed to copy model file to Models\n";
                     return false;
                 }
                 $found = true;
-                echo "ner_model.dat copied to Models directory!\n";
+                echo "✔ Model file copied to Models directory!\n";
                 break;
             }
         }
 
         if (! $found) {
-            echo "Could not find ner_model.dat in extracted files.\n";
-
+            echo "✘ Could not find model file in extracted files.\n";
             return false;
         }
 
@@ -172,8 +146,7 @@ class SmartPiiRedactor
         @unlink($tmpFile);
         @unlink(isset($tarPath) ? $tarPath : null);
 
-        echo "Model download and setup completed.\n";
-
+        echo "✔ Model download and setup completed.\n";
         return true;
     }
 }
