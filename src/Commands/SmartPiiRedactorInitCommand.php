@@ -4,7 +4,6 @@ namespace TheJenos\SmartPiiRedactor\Commands;
 
 use Illuminate\Console\Command;
 use Mitie\Vendor;
-use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
 
 class SmartPiiRedactorInitCommand extends Command
 {
@@ -18,13 +17,14 @@ class SmartPiiRedactorInitCommand extends Command
         $destinationPath = $destinationDir.'/ner_model.dat';
 
         if (file_exists($destinationPath)) {
-            $this->info("✔ Model file already exists. Skipping download and extraction.");
+            $this->info('✔ Model file already exists. Skipping download and extraction.');
+
             return self::SUCCESS;
         } else {
-            $this->info("✘ Model file not found.");
+            $this->info('✘ Model file not found.');
         }
 
-        $this->info("Checking for MITIE-models-v0.2.tar.bz2...");
+        $this->info('Checking for MITIE-models-v0.2.tar.bz2...');
 
         $url = 'https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2';
 
@@ -36,7 +36,7 @@ class SmartPiiRedactorInitCommand extends Command
         // Download the file
         $fileData = file_get_contents($url);
         if ($fileData === false) {
-            $this->info('Failed to download model from ' . $url);
+            $this->info('Failed to download model from '.$url);
 
             return self::FAILURE;
         }
@@ -53,7 +53,7 @@ class SmartPiiRedactorInitCommand extends Command
             }
             $tar->extractTo($tmpExtractedDir, null, true);
         } catch (\Exception $e) {
-            $this->info('Error extracting tar.bz2: ' . $e->getMessage());
+            $this->info('Error extracting tar.bz2: '.$e->getMessage());
 
             return self::FAILURE;
         }
@@ -71,17 +71,19 @@ class SmartPiiRedactorInitCommand extends Command
                     mkdir($destinationDir, 0755, true);
                 }
                 if (! copy($modelPath, $destinationPath)) {
-                    $this->info("✘ Failed to copy model file to Models");
+                    $this->info('✘ Failed to copy model file to Models');
+
                     return self::FAILURE;
                 }
                 $found = true;
-                $this->info("✔ Model file copied to Models directory!");
+                $this->info('✔ Model file copied to Models directory!');
                 break;
             }
         }
 
         if (! $found) {
-            $this->info("✘ Could not find model file in extracted files.");
+            $this->info('✘ Could not find model file in extracted files.');
+
             return self::FAILURE;
         }
 
@@ -89,7 +91,8 @@ class SmartPiiRedactorInitCommand extends Command
         @unlink($tmpFile);
         @unlink(isset($tarPath) ? $tarPath : null);
 
-        $this->info("✔ Model download and setup completed.");
+        $this->info('✔ Model download and setup completed.');
+
         return self::SUCCESS;
     }
 }
