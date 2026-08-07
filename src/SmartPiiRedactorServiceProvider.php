@@ -4,6 +4,7 @@ namespace TheJenos\SmartPiiRedactor;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+use TheJenos\SmartPiiRedactor\Commands\SmartPiiRedactorInitCommand;
 
 // use TheJenos\SmartPiiRedactor\Commands\SmartPiiRedactorCommand;
 
@@ -19,6 +20,7 @@ class SmartPiiRedactorServiceProvider extends PackageServiceProvider
         $package
             ->name('smart-pii-redactor')
             ->hasConfigFile()
-            ->hasViews();
+            ->hasViews()
+            ->hasCommand(SmartPiiRedactorInitCommand::class);
     }
 }

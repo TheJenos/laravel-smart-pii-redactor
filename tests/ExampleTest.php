@@ -2,6 +2,10 @@
 
 use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
 
+// it('can run init command and download model file', function () {
+//     $this->artisan('smart-pii-redactor:init')->assertSuccessful();
+// });
+
 it('can test', function () {
     $smartPiiRedactor = App::make(SmartPiiRedactor::class);
 

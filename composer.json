@@ -47,8 +47,6 @@
     "scripts": {
         "post-autoload-dump": "@composer run prepare",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
-        "post-install-cmd": "TheJenos\\SmartPiiRedactor\\SmartPiiRedactor::check",
-        "post-update-cmd": "TheJenos\\SmartPiiRedactor\\SmartPiiRedactor::check",
         "analyse": "vendor/bin/phpstan analyse",
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
