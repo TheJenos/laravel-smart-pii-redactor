@@ -1,12 +1,12 @@
 {
-    "name": "thejenos/laravel-smart-pii-redactor",
-    "description": "This is my package laravel-smart-pii-redactor",
+    "name": "thejenos/smart-pii-redactor",
+    "description": "This is my package smart-pii-redactor",
     "keywords": [
         "Thanura Nadun",
         "laravel",
-        "laravel-smart-pii-redactor"
+        "smart-pii-redactor"
     ],
-    "homepage": "https://github.com/thejenos/laravel-smart-pii-redactor",
+    "homepage": "https://github.com/thejenos/smart-pii-redactor",
     "license": "MIT",
     "authors": [
         {
