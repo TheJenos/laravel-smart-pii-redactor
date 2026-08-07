@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace TheJenos\LaravelSmartPiiRedactor;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use VendorName\Skeleton\Commands\SkeletonCommand;
+use TheJenos\LaravelSmartPiiRedactor\Commands\LaravelSmartPiiRedactorCommand;
 
-class SkeletonServiceProvider extends PackageServiceProvider
+class LaravelSmartPiiRedactorServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -16,10 +16,10 @@ class SkeletonServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('skeleton')
+            ->name('laravel-smart-pii-redactor')
             ->hasConfigFile()
             ->hasViews()
-            ->hasMigration('create_migration_table_name_table')
-            ->hasCommand(SkeletonCommand::class);
+            ->hasMigration('create_laravel_smart_pii_redactor_table')
+            ->hasCommand(LaravelSmartPiiRedactorCommand::class);
     }
 }

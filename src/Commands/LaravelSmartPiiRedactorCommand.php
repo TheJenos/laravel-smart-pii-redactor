@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace TheJenos\LaravelSmartPiiRedactor\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelSmartPiiRedactorCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-smart-pii-redactor';
 
     public $description = 'My command';
 
