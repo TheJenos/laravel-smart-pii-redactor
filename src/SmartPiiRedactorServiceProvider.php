@@ -4,6 +4,7 @@ namespace TheJenos\SmartPiiRedactor;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
+
 // use TheJenos\SmartPiiRedactor\Commands\SmartPiiRedactorCommand;
 
 class SmartPiiRedactorServiceProvider extends PackageServiceProvider

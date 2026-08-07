@@ -4,15 +4,14 @@ namespace TheJenos\SmartPiiRedactor;
 
 use Mitie\NER;
 use Mitie\Vendor;
-use Str;
 
-class SmartPiiRedactor {
-
+class SmartPiiRedactor
+{
     protected $ner;
 
     public function __construct()
     {
-        $basePath = __DIR__ . '/Models/ner_model.dat';
+        $basePath = __DIR__.'/Models/ner_model.dat';
         $this->ner = new NER($basePath);
     }
 
@@ -27,12 +26,12 @@ class SmartPiiRedactor {
         $entities = $doc->entities();
 
         $entities = array_filter($entities, function ($entity) {
-            return !isset($entity['tag']) || $entity['tag'] !== 'MISC';
+            return ! isset($entity['tag']) || $entity['tag'] !== 'MISC';
         });
 
         $uniqueEntities = [];
         foreach ($entities as $entity) {
-            if (!isset($uniqueEntities[$entity['text']])) {
+            if (! isset($uniqueEntities[$entity['text']])) {
                 $uniqueEntities[$entity['text']] = $entity;
             }
         }
@@ -52,6 +51,7 @@ class SmartPiiRedactor {
         foreach ($entities as $entity) {
             $text = str_replace($entity['text'], '***', $text);
         }
+
         return $text;
     }
 
@@ -59,15 +59,16 @@ class SmartPiiRedactor {
     {
         $entities = $this->getEntities($text);
         foreach ($entities as $entity) {
-            $text = str_replace($entity['text'], "[" . $entity['tag'] . "]", $text);
+            $text = str_replace($entity['text'], '['.$entity['tag'].']', $text);
         }
+
         return $text;
     }
-    
+
     public function maskWithMap(string $text): array
     {
         $entities = $this->getEntities($text);
-        
+
         $counts = [
             'PERSON' => 0,
             'ORGANIZATION' => 0,
@@ -79,8 +80,8 @@ class SmartPiiRedactor {
         foreach ($entities as $entity) {
             $id = $counts[$entity['tag']]++;
 
-            $tag = "[" . $entity['tag'] . "_" . $id . "]";
-            
+            $tag = '['.$entity['tag'].'_'.$id.']';
+
             $map[$tag] = $entity['text'];
 
             $text = str_replace($entity['text'], $tag, $text);
@@ -93,14 +94,15 @@ class SmartPiiRedactor {
     {
         Vendor::check();
 
-        $destinationDir = __DIR__ . '/Models';
-        $destinationPath = $destinationDir . '/ner_model.dat';
-        
-        echo "Destination directory: " . $destinationDir . "\n";
+        $destinationDir = __DIR__.'/Models';
+        $destinationPath = $destinationDir.'/ner_model.dat';
+
+        echo 'Destination directory: '.$destinationDir."\n";
 
         // Skip download and extraction if ner_model.dat already exists
         if (file_exists($destinationPath)) {
             echo "ner_model.dat already exists. Skipping download and extraction.\n";
+
             return true;
         }
 
@@ -110,13 +112,14 @@ class SmartPiiRedactor {
 
         // Use a writable directory for the downloaded file and extraction
         $baseDir = sys_get_temp_dir();
-        $tmpFile = $baseDir . DIRECTORY_SEPARATOR . 'mitie_models.tar.bz2';
-        $tmpExtractedDir = $baseDir . DIRECTORY_SEPARATOR . 'mitie_models_extract';
+        $tmpFile = $baseDir.DIRECTORY_SEPARATOR.'mitie_models.tar.bz2';
+        $tmpExtractedDir = $baseDir.DIRECTORY_SEPARATOR.'mitie_models_extract';
 
         // Download the file
         $fileData = file_get_contents($url);
         if ($fileData === false) {
-            echo "Failed to download model from " . $url . "\n";
+            echo 'Failed to download model from '.$url."\n";
+
             return false;
         }
         file_put_contents($tmpFile, $fileData);
@@ -127,28 +130,30 @@ class SmartPiiRedactor {
             $phar->decompress(); // creates tar
             $tarPath = substr($tmpFile, 0, -4); // remove .bz2
             $tar = new \PharData($tarPath);
-            if (!is_dir($tmpExtractedDir)) {
+            if (! is_dir($tmpExtractedDir)) {
                 mkdir($tmpExtractedDir, 0755, true);
             }
             $tar->extractTo($tmpExtractedDir, null, true);
         } catch (\Exception $e) {
-            echo "Error extracting tar.bz2: " . $e->getMessage() . "\n";
+            echo 'Error extracting tar.bz2: '.$e->getMessage()."\n";
+
             return false;
         }
 
         // Find and move ner_model.dat to Models directory
         $possibleModelLocations = [
-            $tmpExtractedDir . '/english/ner_model.dat',
-            $tmpExtractedDir . '/MITIE-models/english/ner_model.dat',
+            $tmpExtractedDir.'/english/ner_model.dat',
+            $tmpExtractedDir.'/MITIE-models/english/ner_model.dat',
         ];
         $found = false;
         foreach ($possibleModelLocations as $modelPath) {
             if (file_exists($modelPath)) {
-                if (!is_dir($destinationDir)) {
+                if (! is_dir($destinationDir)) {
                     mkdir($destinationDir, 0755, true);
                 }
-                if (!copy($modelPath, $destinationPath)) {
+                if (! copy($modelPath, $destinationPath)) {
                     echo "Failed to copy ner_model.dat to Models\n";
+
                     return false;
                 }
                 $found = true;
@@ -157,8 +162,9 @@ class SmartPiiRedactor {
             }
         }
 
-        if (!$found) {
+        if (! $found) {
             echo "Could not find ner_model.dat in extracted files.\n";
+
             return false;
         }
 
