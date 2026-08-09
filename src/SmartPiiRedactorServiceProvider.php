@@ -20,7 +20,6 @@ class SmartPiiRedactorServiceProvider extends PackageServiceProvider
         $package
             ->name('smart-pii-redactor')
             ->hasConfigFile()
-            ->hasViews()
             ->hasCommand(SmartPiiRedactorInitCommand::class);
     }
 }
