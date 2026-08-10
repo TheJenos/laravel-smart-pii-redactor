@@ -5,7 +5,6 @@ namespace TheJenos\SmartPiiRedactor;
 use Cache;
 use Mitie\NER;
 use Session;
-use Validator;
 
 class SmartPiiRedactor
 {
@@ -56,7 +55,7 @@ class SmartPiiRedactor
     public function getEntities(string $text, array $onlyEntities = [], array $exceptEntities = []): array
     {
         $allTags = SmartPiiRedactorEntites::all();
-    
+
         $onlyEntities = SmartPiiRedactorEntites::toValue($onlyEntities);
         $exceptEntities = SmartPiiRedactorEntites::toValue($exceptEntities);
 
@@ -64,10 +63,10 @@ class SmartPiiRedactor
         $invalidExcept = array_diff($exceptEntities, $allTags);
 
         if (count($invalidOnly) > 0) {
-            throw new \Exception('Invalid entities in onlyEntities: ' . implode(', ', $invalidOnly));
+            throw new \Exception('Invalid entities in onlyEntities: '.implode(', ', $invalidOnly));
         }
         if (count($invalidExcept) > 0) {
-            throw new \Exception('Invalid entities in exceptEntities: ' . implode(', ', $invalidExcept));
+            throw new \Exception('Invalid entities in exceptEntities: '.implode(', ', $invalidExcept));
         }
 
         $selectedTags = $allTags;
@@ -97,7 +96,7 @@ class SmartPiiRedactor
 
         $uniqueEntities = [];
         foreach ($foundEntities as $entity) {
-            if (!isset($uniqueEntities[$entity['text']])) {
+            if (! isset($uniqueEntities[$entity['text']])) {
                 $uniqueEntities[$entity['text']] = $entity;
             }
         }
@@ -167,11 +166,12 @@ class SmartPiiRedactor
         foreach ($replacement as $key => $value) {
             $text = str_replace($key, $value, $text);
         }
+
         return $text;
     }
 
     private static function getCacheKey(): string
     {
-        return self::CACHE_KEY . '_' . Session::getId();
+        return self::CACHE_KEY.'_'.Session::getId();
     }
 }

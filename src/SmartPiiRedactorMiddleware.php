@@ -4,13 +4,13 @@ namespace TheJenos\SmartPiiRedactor;
 
 use Closure;
 use Laravel\Ai\Prompts\AgentPrompt;
-use Laravel\Ai\Responses\AgentResponse;
-use Log;
 
 class SmartPiiRedactorMiddleware
 {
     protected $method;
+
     protected $onlyEntities;
+
     protected $exceptEntities;
 
     public function __construct(string $method = 'redact', array $onlyEntities = [], array $exceptEntities = [])

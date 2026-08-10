@@ -49,7 +49,7 @@ enum SmartPiiRedactorEntites: string
         return array_merge(self::modelEntities(), self::regexEntities());
     }
 
-    public static function toValue($array): array | string
+    public static function toValue($array): array|string
     {
         if (is_array($array)) {
             return array_map(function ($item) {
