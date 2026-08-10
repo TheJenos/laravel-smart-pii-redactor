@@ -2,21 +2,26 @@
 
 namespace TheJenos\SmartPiiRedactor;
 
+use Cache;
 use Mitie\NER;
+use Session;
+use Validator;
 
 class SmartPiiRedactor
 {
+    const CACHE_KEY = 'smart_pii_redactor_cache';
+
     const REGEX_PATTERN = [
-        'EMAIL' => '/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/',
-        'URL' => '/https?:\/\/[^\s"\'<>]+/',
-        'IPV4_ADDRESS' => '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
-        'IPV6_ADDRESS' => '/\b([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}\b|\b([0-9a-fA-F]{1,4}:){1,7}:|::([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}\b|\b([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}\b/',
-        'SSN' => '/\b\d{3}-\d{2}-\d{4}\b/',
-        'CREDIT_CARD' => '/\b\d(?:[ -]?\d){12,18}\b/',
-        'PHONE' => '/(?:\+\d{1,3}\s?\d{1,4}[\s-]?)?(?:\(?\d{1,4}\)?[\s-]?)?\d{1,4}(?:[\s-]\d{2,4}){1,4}\b/',
-        'IBAN' => '/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/',
-        'API_KEY' => '/\b(?:sk-(?:live|test)-[A-Za-z0-9]{24,}|pk-(?:live|test)-[A-Za-z0-9]{24,}|plaid-(?:sandbox|development|production)-[a-f0-9]{32,}|api[_-]?key[_-]?[A-Za-z0-9\-]{16,}|AKIA[0-9A-Z]{16}|[Ss]ecret[_-]?[Kk]ey[_-]?[A-Za-z0-9\-_=]{16,})\b/',
-        'BEARER_TOKEN' => '/\bBearer\s+[A-Za-z0-9\-_.]{16,}\b/',
+        SmartPiiRedactorEntites::EMAIL->value => '/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/',
+        SmartPiiRedactorEntites::URL->value => '/https?:\/\/[^\s"\'<>]+/',
+        SmartPiiRedactorEntites::IPV4_ADDRESS->value => '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
+        SmartPiiRedactorEntites::IPV6_ADDRESS->value => '/\b([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}\b|\b([0-9a-fA-F]{1,4}:){1,7}:|::([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}\b|\b([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}\b/',
+        SmartPiiRedactorEntites::SSN->value => '/\b\d{3}-\d{2}-\d{4}\b/',
+        SmartPiiRedactorEntites::CREDIT_CARD->value => '/\b\d(?:[ -]?\d){12,18}\b/',
+        SmartPiiRedactorEntites::PHONE->value => '/(?:\+\d{1,3}\s?\d{1,4}[\s-]?)?(?:\(?\d{1,4}\)?[\s-]?)?\d{1,4}(?:[\s-]\d{2,4}){1,4}\b/',
+        SmartPiiRedactorEntites::IBAN->value => '/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/',
+        SmartPiiRedactorEntites::API_KEY->value => '/\b(?:sk-(?:live|test)-[A-Za-z0-9]{24,}|pk-(?:live|test)-[A-Za-z0-9]{24,}|plaid-(?:sandbox|development|production)-[a-f0-9]{32,}|api[_-]?key[_-]?[A-Za-z0-9\-]{16,}|AKIA[0-9A-Z]{16}|[Ss]ecret[_-]?[Kk]ey[_-]?[A-Za-z0-9\-_=]{16,})\b/',
+        SmartPiiRedactorEntites::BEARER_TOKEN->value => '/\bBearer\s+[A-Za-z0-9\-_.]{16,}\b/',
     ];
 
     protected $ner;
@@ -48,31 +53,73 @@ class SmartPiiRedactor
         return $entities;
     }
 
-    public function getEntities(string $text): array
+    public function getEntities(string $text, array $onlyEntities = [], array $exceptEntities = []): array
     {
-        $doc = $this->ner->doc($text);
-        $entities = $doc->entities();
+        $allTags = SmartPiiRedactorEntites::all();
+    
+        $onlyEntities = SmartPiiRedactorEntites::toValue($onlyEntities);
+        $exceptEntities = SmartPiiRedactorEntites::toValue($exceptEntities);
 
-        $entities = array_merge($entities, $this->getEntitiesFromRegex($text));
+        $invalidOnly = array_diff($onlyEntities, $allTags);
+        $invalidExcept = array_diff($exceptEntities, $allTags);
 
-        $entities = array_filter($entities, function ($entity) {
+        if (count($invalidOnly) > 0) {
+            throw new \Exception('Invalid entities in onlyEntities: ' . implode(', ', $invalidOnly));
+        }
+        if (count($invalidExcept) > 0) {
+            throw new \Exception('Invalid entities in exceptEntities: ' . implode(', ', $invalidExcept));
+        }
+
+        $selectedTags = $allTags;
+
+        if (count($onlyEntities) > 0) {
+            $selectedTags = $onlyEntities;
+        }
+
+        if (count($exceptEntities) > 0) {
+            $selectedTags = array_diff($allTags, $exceptEntities);
+        }
+
+        $foundEntities = [];
+
+        if (array_diff(SmartPiiRedactorEntites::modelEntities(), $selectedTags) == []) {
+            $doc = $this->ner->doc($text);
+            $foundEntities = array_merge($foundEntities, $doc->entities());
+        }
+
+        if (array_diff(SmartPiiRedactorEntites::regexEntities(), $selectedTags) == []) {
+            $foundEntities = array_merge($foundEntities, $this->getEntitiesFromRegex($text));
+        }
+
+        $foundEntities = array_filter($foundEntities, function ($entity) {
             return ! isset($entity['tag']) || $entity['tag'] !== 'MISC';
         });
 
         $uniqueEntities = [];
-        foreach ($entities as $entity) {
-            if (! isset($uniqueEntities[$entity['text']])) {
+        foreach ($foundEntities as $entity) {
+            if (!isset($uniqueEntities[$entity['text']])) {
                 $uniqueEntities[$entity['text']] = $entity;
             }
         }
-
         $entities = array_values($uniqueEntities);
 
-        usort($entities, function ($a, $b) {
-            return strlen($b['text']) <=> strlen($a['text']);
-        });
+        $finalEntities = [];
+        foreach ($entities as $i => $entity) {
+            $isPartOfOther = false;
+            foreach ($entities as $j => $otherEntity) {
+                if ($i !== $j && strpos($otherEntity['text'], $entity['text']) !== false) {
+                    $isPartOfOther = true;
+                    break;
+                }
+            }
+            if (! $isPartOfOther) {
+                $finalEntities[] = $entity;
+            }
+        }
 
-        return $entities;
+        $foundEntities = $finalEntities;
+
+        return $foundEntities;
     }
 
     public function redact($text, $entities): string
@@ -85,23 +132,6 @@ class SmartPiiRedactor
     }
 
     public function mask($text, $entities): string
-    {
-        $counts = [];
-
-        foreach ($entities as $entity) {
-            $id = isset($counts[$entity['tag']]) ? $counts[$entity['tag']]++ : 0;
-
-            $counts[$entity['tag']] = $id;
-
-            $tag = '['.$entity['tag'].'_'.$id.']';
-
-            $text = str_replace($entity['text'], $tag, $text);
-        }
-
-        return $text;
-    }
-
-    public function maskWithMap($text, $entities): array
     {
         $counts = [];
 
@@ -121,6 +151,27 @@ class SmartPiiRedactor
             $text = str_replace($entity['text'], $tag, $text);
         }
 
-        return [$text, $map];
+        Cache::put(self::getCacheKey(), $map);
+
+        return $text;
+    }
+
+    public static function getCacheReplacement(): array
+    {
+        return Cache::get(self::getCacheKey(), []);
+    }
+
+    public static function reapplyMaskedText($text): string
+    {
+        $replacement = self::getCacheReplacement();
+        foreach ($replacement as $key => $value) {
+            $text = str_replace($key, $value, $text);
+        }
+        return $text;
+    }
+
+    private static function getCacheKey(): string
+    {
+        return self::CACHE_KEY . '_' . Session::getId();
     }
 }

@@ -4,25 +4,31 @@ namespace TheJenos\SmartPiiRedactor;
 
 use Closure;
 use Laravel\Ai\Prompts\AgentPrompt;
+use Laravel\Ai\Responses\AgentResponse;
+use Log;
 
 class SmartPiiRedactorMiddleware
 {
     protected $method;
+    protected $onlyEntities;
+    protected $exceptEntities;
 
-    public function __construct($method = 'redact')
+    public function __construct(string $method = 'redact', array $onlyEntities = [], array $exceptEntities = [])
     {
         $this->method = $method;
+        $this->onlyEntities = $onlyEntities;
+        $this->exceptEntities = $exceptEntities;
     }
 
-    public function handle(SmartPiiRedactor $smartPiiRedactor, AgentPrompt $prompt, Closure $next)
+    public function handle(AgentPrompt $prompt, Closure $next)
     {
-        $entities = $smartPiiRedactor->getEntities($prompt->prompt);
+        $smartPiiRedactor = app(SmartPiiRedactor::class);
+
+        $entities = $smartPiiRedactor->getEntities($prompt->prompt, $this->onlyEntities, $this->exceptEntities);
 
         if (count($entities) === 0) {
             return $next($prompt);
         }
-
-        $replacement = [];
 
         switch ($this->method) {
             case 'redact':
@@ -31,13 +37,8 @@ class SmartPiiRedactorMiddleware
             case 'mask':
                 $newPrompt = $smartPiiRedactor->mask($prompt->prompt, $entities);
                 break;
-            case 'mask-replace':
-                [$newPrompt, $replacement] = $smartPiiRedactor->maskWithMap($prompt->prompt, $entities);
-                break;
         }
 
-        $output = $next($prompt->revise($newPrompt, $replacement));
-
-        return $output;
+        return $next($prompt->revise($newPrompt));
     }
 }
