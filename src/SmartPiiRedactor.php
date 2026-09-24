@@ -3,13 +3,13 @@
 namespace TheJenos\SmartPiiRedactor;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Mitie\NER;
 
 class SmartPiiRedactor
 {
     public const CACHE_KEY = 'smart_pii_redactor_cache';
+
     public const DRIVER = 'redactor_wrapper_driver';
 
     public const REGEX_PATTERN = [

@@ -16,7 +16,7 @@ class SmartPiiRedactorServiceProvider extends PackageServiceProvider
 
         $this->app->make(AiManager::class)->extend(SmartPiiRedactor::DRIVER, function ($app, $config) {
             $config = config('ai.providers.redactor', []);
-        
+
             return new RedactorProvider(
                 $config,
                 $app->make('events')
