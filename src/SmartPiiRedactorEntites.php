@@ -4,7 +4,7 @@ namespace TheJenos\SmartPiiRedactor;
 
 enum SmartPiiRedactorEntites: string
 {
-    case NAME = 'NAME';
+    case PERSON = 'PERSON';
     case ORGANIZATION = 'ORGANIZATION';
     case LOCATION = 'LOCATION';
 
@@ -22,7 +22,7 @@ enum SmartPiiRedactorEntites: string
     public static function modelEntities(): array
     {
         return self::toValue([
-            self::NAME,
+            self::PERSON,
             self::ORGANIZATION,
             self::LOCATION,
         ]);

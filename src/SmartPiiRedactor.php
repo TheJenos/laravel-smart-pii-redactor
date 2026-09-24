@@ -2,15 +2,17 @@
 
 namespace TheJenos\SmartPiiRedactor;
 
-use Cache;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Mitie\NER;
-use Session;
 
 class SmartPiiRedactor
 {
-    const CACHE_KEY = 'smart_pii_redactor_cache';
+    public const CACHE_KEY = 'smart_pii_redactor_cache';
+    public const DRIVER = 'redactor_wrapper_driver';
 
-    const REGEX_PATTERN = [
+    public const REGEX_PATTERN = [
         SmartPiiRedactorEntites::EMAIL->value => '/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/',
         SmartPiiRedactorEntites::URL->value => '/https?:\/\/[^\s"\'<>]+/',
         SmartPiiRedactorEntites::IPV4_ADDRESS->value => '/\b(?:\d{1,3}\.){3}\d{1,3}\b/',
@@ -130,11 +132,13 @@ class SmartPiiRedactor
         return $text;
     }
 
-    public function mask($text, $entities): string
+    public function mask(string $text, array $entities, ?string $replacementKey = null): string
     {
         $counts = [];
 
         $map = [];
+
+        $replacementKey = $replacementKey ?? Str::random(10);
 
         foreach ($entities as $entity) {
             if (! isset($counts[$entity['tag']])) {
@@ -150,28 +154,39 @@ class SmartPiiRedactor
             $text = str_replace($entity['text'], $tag, $text);
         }
 
-        Cache::put(self::getCacheKey(), $map);
+        Cache::put(self::getCacheKey($replacementKey), $map);
 
         return $text;
     }
 
-    public static function getCacheReplacement(): array
+    public static function getCacheReplacement(string $replacementKey): array
     {
-        return Cache::get(self::getCacheKey(), []);
+        return Cache::get(self::getCacheKey($replacementKey), []);
     }
 
-    public static function reapplyMaskedText($text): string
+    public static function reapplyMaskedText(string $text, string $replacementKey): string
     {
-        $replacement = self::getCacheReplacement();
+        $replacement = self::getCacheReplacement($replacementKey);
         foreach ($replacement as $key => $value) {
-            $text = str_replace($key, $value, $text);
+            $text = preg_replace_callback(self::tagPattern($key), fn () => $value, $text);
         }
 
         return $text;
     }
 
-    private static function getCacheKey(): string
+    /**
+     * Build a pattern matching a tag like [PERSON_0], including the variants models tend to write
+     * back: markdown-escaped (\[PERSON\_0\]), lowercased, or with spaces instead of underscores.
+     */
+    private static function tagPattern(string $tag): string
     {
-        return self::CACHE_KEY.'_'.Session::getId();
+        $parts = array_map(fn ($part) => preg_quote($part, '/'), explode('_', trim($tag, '[]')));
+
+        return '/\\\\?\[\s*'.implode('(?:\\\\?_|\s)', $parts).'\s*\\\\?\]/i';
+    }
+
+    private static function getCacheKey(string $replacementKey): string
+    {
+        return self::CACHE_KEY.'_'.$replacementKey;
     }
 }

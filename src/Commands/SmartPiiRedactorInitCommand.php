@@ -33,14 +33,12 @@ class SmartPiiRedactorInitCommand extends Command
         $tmpFile = $baseDir.DIRECTORY_SEPARATOR.'mitie_models.tar.bz2';
         $tmpExtractedDir = $baseDir.DIRECTORY_SEPARATOR.'mitie_models_extract';
 
-        // Download the file
-        $fileData = file_get_contents($url);
-        if ($fileData === false) {
+        // Stream the download to disk; the archive is too large to hold in memory
+        if (! copy($url, $tmpFile)) {
             $this->info('Failed to download model from '.$url);
 
             return self::FAILURE;
         }
-        file_put_contents($tmpFile, $fileData);
 
         // Extract the bz2 (tar.bz2)
         $phar = new \PharData($tmpFile);
