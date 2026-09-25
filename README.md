@@ -18,7 +18,7 @@ Your application, including stored conversations, always works with the real val
 ## Features
 
 - **Drop-in provider driver**: wrap an existing laravel/ai provider; your agents don't change.
-- **Hybrid detection**: an on-device [MITIE](https://github.com/mit-nlp/MITIE) NER model finds names, organizations and locations, and regex rules find structured data such as emails, cards and API keys. Nothing is sent to a third party for detection.
+- **Hybrid detection**: an on-device [Stanford NER](https://nlp.stanford.edu/software/CRF-NER.html) model finds names, organizations and locations, and regex rules find structured data such as emails, cards and API keys. Nothing is sent to a third party for detection.
 - **Reversible masking**: placeholders are restored in replies, streamed text, reasoning and tool call arguments. Your tools receive real values.
 - **Streaming-safe**: placeholders split across stream chunks (`[PER` + `SON_0]`) are held back until they're complete, then restored.
 - **Tolerant restore**: variants models tend to write back, such as `\[PERSON\_0\]`, `[person_0]` or `[PERSON 0]`, are restored too.
@@ -67,10 +67,11 @@ Install the package:
 composer require thejenos/smart-pii-redactor
 ```
 
-Download the MITIE native library and the English NER model:
+Named-entity recognition uses [Stanford NER](https://nlp.stanford.edu/software/CRF-NER.html), which runs on Java, so a Java runtime (8 or newer) must be available as `java` on the `PATH`.
+
+Download the Stanford NER jar and the English 3-class classifier:
 
 ```bash
-php -r "require 'vendor/autoload.php'; Mitie\Vendor::check();"
 php artisan smart-pii-redactor:init
 ```
 
@@ -79,11 +80,9 @@ Both are stored inside `vendor/`, so Composer removes them whenever it reinstall
 ```json
 "scripts": {
     "post-install-cmd": [
-        "Mitie\\Vendor::check",
         "@php artisan smart-pii-redactor:init"
     ],
     "post-update-cmd": [
-        "Mitie\\Vendor::check",
         "@php artisan smart-pii-redactor:init"
     ]
 }
@@ -264,7 +263,7 @@ Please report security issues privately to [nadunnew@gmail.com](mailto:nadunnew@
 
 - [Thanura Nadun](https://github.com/TheJenos)
 - [All contributors](https://github.com/TheJenos/laravel-smart-pii-redactor/graphs/contributors)
-- [MITIE](https://github.com/mit-nlp/MITIE) and [mitie-php](https://github.com/ankane/mitie-php) for named-entity recognition
+- [Stanford NER](https://nlp.stanford.edu/software/CRF-NER.html) and [PHP-Stanford-NLP](https://github.com/agentile/PHP-Stanford-NLP) for named-entity recognition
 
 ## License
 

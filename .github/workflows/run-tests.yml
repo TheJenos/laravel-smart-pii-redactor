@@ -50,15 +50,20 @@ jobs:
       - name: List Installed Dependencies
         run: composer show -D
 
-      # Mitie's own post-install hook only runs when it's the root package, so the native library is fetched here...
-      - name: Install MITIE native library
-        run: php -r "require 'vendor/autoload.php'; Mitie\Vendor::check();"
+      # Stanford NER runs on the JVM...
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Cache NER model
         uses: actions/cache@v4
         with:
-          path: src/Models/ner_model.dat
-          key: mitie-ner-model-v0.2
+          path: |
+            src/Models/stanford-ner.jar
+            src/Models/english.all.3class.distsim.crf.ser.gz
+          key: stanford-ner-4.2.0
 
       - name: Download NER model
         run: vendor/bin/testbench smart-pii-redactor:init

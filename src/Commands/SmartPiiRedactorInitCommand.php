@@ -3,7 +3,7 @@
 namespace TheJenos\SmartPiiRedactor\Commands;
 
 use Illuminate\Console\Command;
-use Mitie\Vendor;
+use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
 
 class SmartPiiRedactorInitCommand extends Command
 {
@@ -11,27 +11,36 @@ class SmartPiiRedactorInitCommand extends Command
 
     public function handle()
     {
-        Vendor::check();
+        $destinationDir = SmartPiiRedactor::MODELS_PATH;
 
-        $destinationDir = __DIR__.'/../Models';
-        $destinationPath = $destinationDir.'/ner_model.dat';
+        // Archive entry basename => file it's saved as in the Models directory...
+        $files = [
+            SmartPiiRedactor::NER_JAR => $destinationDir.'/'.SmartPiiRedactor::NER_JAR,
+            SmartPiiRedactor::NER_CLASSIFIER => $destinationDir.'/'.SmartPiiRedactor::NER_CLASSIFIER,
+        ];
 
-        if (file_exists($destinationPath)) {
-            $this->info('✔ Model file already exists. Skipping download and extraction.');
+        $missing = array_filter($files, fn ($path) => ! file_exists($path));
+
+        if ($missing === []) {
+            $this->info('✔ Stanford NER files already exist. Skipping download and extraction.');
 
             return self::SUCCESS;
         } else {
-            $this->info('✘ Model file not found.');
+            $this->info('✘ Stanford NER files not found.');
         }
 
-        $this->info('Checking for MITIE-models-v0.2.tar.bz2...');
+        if (! class_exists(\ZipArchive::class)) {
+            $this->info('✘ The zip PHP extension is required to extract the Stanford NER archive.');
 
-        $url = 'https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2';
+            return self::FAILURE;
+        }
 
-        // Use a writable directory for the downloaded file and extraction
-        $baseDir = sys_get_temp_dir();
-        $tmpFile = $baseDir.DIRECTORY_SEPARATOR.'mitie_models.tar.bz2';
-        $tmpExtractedDir = $baseDir.DIRECTORY_SEPARATOR.'mitie_models_extract';
+        $url = 'https://nlp.stanford.edu/software/stanford-ner-4.2.0.zip';
+
+        $this->info('Downloading '.$url.'...');
+
+        // Use a writable directory for the downloaded file
+        $tmpFile = sys_get_temp_dir().DIRECTORY_SEPARATOR.'stanford_ner.zip';
 
         // Stream the download to disk; the archive is too large to hold in memory
         if (! copy($url, $tmpFile)) {
@@ -40,61 +49,50 @@ class SmartPiiRedactorInitCommand extends Command
             return self::FAILURE;
         }
 
-        // Extract the bz2 (tar.bz2)
-        $tarPath = substr($tmpFile, 0, -4); // remove .bz2
-        try {
-            // Decompress as a stream; PharData::decompress() loads the whole archive into memory
-            $source = fopen('compress.bzip2://'.$tmpFile, 'rb');
-            $target = fopen($tarPath, 'wb');
+        $zip = new \ZipArchive;
+        if ($zip->open($tmpFile) !== true) {
+            $this->info('✘ Unable to open '.$tmpFile);
+
+            return self::FAILURE;
+        }
+
+        if (! is_dir($destinationDir)) {
+            mkdir($destinationDir, 0755, true);
+        }
+
+        // The archive nests everything under a dated folder, so entries are matched by basename
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = $zip->getNameIndex($i);
+            $name = basename($entry);
+
+            if (! isset($missing[$name])) {
+                continue;
+            }
+
+            $source = $zip->getStream($entry);
+            $target = fopen($missing[$name], 'wb');
             if ($source === false || $target === false || stream_copy_to_stream($source, $target) === false) {
-                throw new \RuntimeException('Unable to decompress '.$tmpFile);
+                $this->info('✘ Failed to extract '.$name);
+
+                return self::FAILURE;
             }
             fclose($source);
             fclose($target);
 
-            $tar = new \PharData($tarPath);
-            if (! is_dir($tmpExtractedDir)) {
-                mkdir($tmpExtractedDir, 0755, true);
-            }
-            $tar->extractTo($tmpExtractedDir, null, true);
-        } catch (\Exception $e) {
-            $this->info('Error extracting tar.bz2: '.$e->getMessage());
-
-            return self::FAILURE;
+            unset($missing[$name]);
+            $this->info('✔ '.$name.' copied to Models directory!');
         }
 
-        // Find and move ner_model.dat to Models directory
-        $possibleModelLocations = [
-            $tmpExtractedDir.'/english/ner_model.dat',
-            $tmpExtractedDir.'/MITIE-models/english/ner_model.dat',
-        ];
-
-        $found = false;
-        foreach ($possibleModelLocations as $modelPath) {
-            if (file_exists($modelPath)) {
-                if (! is_dir($destinationDir)) {
-                    mkdir($destinationDir, 0755, true);
-                }
-                if (! copy($modelPath, $destinationPath)) {
-                    $this->info('✘ Failed to copy model file to Models');
-
-                    return self::FAILURE;
-                }
-                $found = true;
-                $this->info('✔ Model file copied to Models directory!');
-                break;
-            }
-        }
-
-        if (! $found) {
-            $this->info('✘ Could not find model file in extracted files.');
-
-            return self::FAILURE;
-        }
+        $zip->close();
 
         // Clean up
         @unlink($tmpFile);
-        @unlink($tarPath);
+
+        if ($missing !== []) {
+            $this->info('✘ Could not find '.implode(', ', array_keys($missing)).' in the archive.');
+
+            return self::FAILURE;
+        }
 
         $this->info('✔ Model download and setup completed.');
 

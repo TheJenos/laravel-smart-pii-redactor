@@ -62,7 +62,6 @@ $section1 = <<<'TEXT'
         https://vault.halcyon-data.example.com/ui/secrets/svc-export.
     - Notification letters drafted for affected residents of Ashgrove, Ontario
         and Marlowe Heights, Oregon, where regulatory timelines are tightest.
-
 TEXT;
 
 it('can test the smart pii redactor', function () use ($section1) {
@@ -75,6 +74,8 @@ it('can test the smart pii redactor', function () use ($section1) {
     $newPrompt = $smartPiiRedactor->mask($section1, $entities, $replacementKey);
 
     $replacement = $smartPiiRedactor->getCacheReplacement($replacementKey);
+
+    dd($newPrompt, $replacement);
 
     expect($newPrompt)
         ->toBeString()
