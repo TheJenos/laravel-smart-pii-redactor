@@ -75,8 +75,6 @@ it('can test the smart pii redactor', function () use ($section1) {
 
     $replacement = $smartPiiRedactor->getCacheReplacement($replacementKey);
 
-    dd($newPrompt, $replacement);
-
     expect($newPrompt)
         ->toBeString()
         ->toContain('[PERSON_0]');
