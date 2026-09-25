@@ -1,8 +1,8 @@
 <?php
 
-use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
+use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
 
 $section1 = <<<'TEXT'
     --------------------------------------------------------------------------------
