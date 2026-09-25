@@ -2,6 +2,10 @@
 
 All notable changes to `smart-pii-redactor` will be documented in this file.
 
+## v1.2.0 - 2026-09-25
+
+**Full Changelog**: https://github.com/TheJenos/laravel-smart-pii-redactor/compare/v1.1.0...v1.2.0
+
 ## v1.1.0 - 2026-09-25
 
 **Full Changelog**: https://github.com/TheJenos/laravel-smart-pii-redactor/compare/v1.0.2...v1.1.0
