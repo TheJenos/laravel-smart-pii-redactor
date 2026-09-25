@@ -87,7 +87,7 @@ class SmartPiiRedactorInitCommand extends Command
 
         // Clean up
         @unlink($tmpFile);
-        @unlink(isset($tarPath) ? $tarPath : null);
+        @unlink($tarPath);
 
         $this->info('✔ Model download and setup completed.');
 

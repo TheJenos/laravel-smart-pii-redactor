@@ -3,6 +3,7 @@
 namespace TheJenos\SmartPiiRedactor\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Laravel\Ai\AiServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use TheJenos\SmartPiiRedactor\SmartPiiRedactorServiceProvider;
 
@@ -20,6 +21,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         return [
+            AiServiceProvider::class,
             SmartPiiRedactorServiceProvider::class,
         ];
     }

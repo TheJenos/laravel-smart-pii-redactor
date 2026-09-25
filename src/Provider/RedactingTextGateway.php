@@ -117,24 +117,12 @@ class RedactingTextGateway implements StepTextGateway
         // Tags can be split across deltas, so text that may be the start of a tag is held back per text/reasoning block...
         $held = [];
 
-        $flush = function (?string $except = null) use (&$held, $replacementKey): Generator {
-            foreach ($held as $key => [$event, $buffer]) {
-                if ($key === $except) {
-                    continue;
-                }
-
-                unset($held[$key]);
-
-                yield $this->withDelta($event, $buffer, $replacementKey);
-            }
-        };
-
         // The request is sent when the stream is started, so only that part is captured...
         $this->capturingHttp(fn () => $stream->current());
 
         foreach ($stream as $event) {
             if (! $event instanceof TextDelta && ! $event instanceof ReasoningDelta) {
-                yield from $flush();
+                yield from $this->flushHeld($held, $replacementKey);
 
                 if ($event instanceof ToolCallEvent) {
                     $this->restoreArguments($event->toolCall->arguments, $replacementKey);
@@ -153,7 +141,7 @@ class RedactingTextGateway implements StepTextGateway
             $key = $event instanceof TextDelta ? 'text:'.$event->messageId : 'reasoning:'.$event->reasoningId;
 
             // A new block started, so whatever the previous one held back is complete...
-            yield from $flush($key);
+            yield from $this->flushHeld($held, $replacementKey, except: $key);
 
             $buffer = ($held[$key][1] ?? '').$event->delta;
 
@@ -171,7 +159,7 @@ class RedactingTextGateway implements StepTextGateway
             }
         }
 
-        yield from $flush();
+        yield from $this->flushHeld($held, $replacementKey);
 
         $response = $stream->getReturn();
 
@@ -421,6 +409,24 @@ class RedactingTextGateway implements StepTextGateway
 
         // A trailing backslash may be the start of an escaped tag...
         return str_ends_with($text, '\\') ? '\\' : '';
+    }
+
+    /**
+     * Release the text held back for each block, except the one still being streamed.
+     *
+     * @param  array<string, array{TextDelta|ReasoningDelta, string}>  $held
+     */
+    protected function flushHeld(array &$held, string $replacementKey, ?string $except = null): Generator
+    {
+        foreach ($held as $key => [$event, $buffer]) {
+            if ($key === $except) {
+                continue;
+            }
+
+            unset($held[$key]);
+
+            yield $this->withDelta($event, $buffer, $replacementKey);
+        }
     }
 
     /**
