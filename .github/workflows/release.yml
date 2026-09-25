@@ -2,14 +2,10 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
+  # Re-run a release for the current composer.json version, e.g. after a failed run...
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release, e.g. 1.2.0 (a "v" prefix is added)'
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -25,28 +21,43 @@ jobs:
     timeout-minutes: 5
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
     steps:
-      - name: Resolve tag
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Read version from composer.json
         id: version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            TAG="v${INPUT_VERSION#v}"
-          else
-            TAG="${GITHUB_REF_NAME}"
+          VERSION=$(jq -r '.version // empty' composer.json)
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::composer.json has no \"version\" field"
+            exit 1
           fi
 
+          TAG="v${VERSION#v}"
+
           if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::'$TAG' is not a valid semver tag (expected vX.Y.Z or vX.Y.Z-suffix)"
+            echo "::error::'$VERSION' in composer.json is not a valid semver version (expected X.Y.Z or X.Y.Z-suffix)"
             exit 1
           fi
 
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+          # Only a version bump releases; pushes that keep the same version are skipped...
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "$TAG is already released, nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing $TAG."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     name: Tests & static analysis
     needs: prepare
+    if: needs.prepare.outputs.release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -61,7 +72,7 @@ jobs:
           coverage: none
 
       - name: Validate composer.json
-        run: composer validate --strict --no-check-lock
+        run: composer validate --strict --no-check-lock --no-check-publish
 
       - name: Install dependencies
         uses: ramsey/composer-install@v4
@@ -100,7 +111,6 @@ jobs:
           fetch-depth: 0
 
       - name: Create tag
-        if: github.event_name == 'workflow_dispatch'
         run: |
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "::error::Tag $TAG already exists"
@@ -109,7 +119,7 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
+          git tag -a "$TAG" -m "Release $TAG" "$GITHUB_SHA"
           git push origin "$TAG"
 
       - name: Create GitHub release
