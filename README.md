@@ -69,26 +69,7 @@ composer require thejenos/smart-pii-redactor
 
 Named-entity recognition uses [Stanford NER](https://nlp.stanford.edu/software/CRF-NER.html), which runs on Java, so a Java runtime (8 or newer) must be available as `java` on the `PATH`.
 
-Download the Stanford NER jar and the English 3-class classifier:
-
-```bash
-php artisan smart-pii-redactor:init
-```
-
-Both are stored inside `vendor/`, so Composer removes them whenever it reinstalls or updates the package. Add these scripts to your application's `composer.json` so they're restored automatically:
-
-```json
-"scripts": {
-    "post-install-cmd": [
-        "@php artisan smart-pii-redactor:init"
-    ],
-    "post-update-cmd": [
-        "@php artisan smart-pii-redactor:init"
-    ]
-}
-```
-
-`smart-pii-redactor:init` does nothing if the model already exists, so it's safe to run on every deploy.
+The Stanford NER jar and the English 3-class classifier ship with the package in `resources/models`, so there's nothing else to download.
 
 ## Configuration
 

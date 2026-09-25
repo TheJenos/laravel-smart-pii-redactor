@@ -85,17 +85,6 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Cache NER model
-        uses: actions/cache@v4
-        with:
-          path: |
-            src/Models/stanford-ner.jar
-            src/Models/english.all.3class.distsim.crf.ser.gz
-          key: stanford-ner-4.2.0
-
-      - name: Download NER model
-        run: vendor/bin/testbench smart-pii-redactor:init
-
       - name: Run PHPStan
         run: ./vendor/bin/phpstan --error-format=github --memory-limit=1G
 

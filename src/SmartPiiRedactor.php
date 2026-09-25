@@ -25,7 +25,7 @@ class SmartPiiRedactor
         SmartPiiRedactorEntites::BEARER_TOKEN->value => '/\bBearer\s+[A-Za-z0-9\-_.]{16,}\b/',
     ];
 
-    public const MODELS_PATH = __DIR__.'/Models';
+    public const MODELS_PATH = __DIR__.'/../resources/models';
 
     public const NER_JAR = 'stanford-ner.jar';
 
