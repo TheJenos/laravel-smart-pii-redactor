@@ -63,6 +63,9 @@
         }
     },
     "extra": {
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        },
         "laravel": {
             "providers": [
                 "TheJenos\\SmartPiiRedactor\\SmartPiiRedactorServiceProvider"
