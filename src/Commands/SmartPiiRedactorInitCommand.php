@@ -41,10 +41,17 @@ class SmartPiiRedactorInitCommand extends Command
         }
 
         // Extract the bz2 (tar.bz2)
-        $phar = new \PharData($tmpFile);
+        $tarPath = substr($tmpFile, 0, -4); // remove .bz2
         try {
-            $phar->decompress(); // creates tar
-            $tarPath = substr($tmpFile, 0, -4); // remove .bz2
+            // Decompress as a stream; PharData::decompress() loads the whole archive into memory
+            $source = fopen('compress.bzip2://'.$tmpFile, 'rb');
+            $target = fopen($tarPath, 'wb');
+            if ($source === false || $target === false || stream_copy_to_stream($source, $target) === false) {
+                throw new \RuntimeException('Unable to decompress '.$tmpFile);
+            }
+            fclose($source);
+            fclose($target);
+
             $tar = new \PharData($tarPath);
             if (! is_dir($tmpExtractedDir)) {
                 mkdir($tmpExtractedDir, 0755, true);

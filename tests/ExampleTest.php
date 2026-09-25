@@ -1,6 +1,8 @@
 <?php
 
 use TheJenos\SmartPiiRedactor\SmartPiiRedactor;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
 
 $section1 = <<<'TEXT'
     --------------------------------------------------------------------------------
@@ -63,18 +65,16 @@ $section1 = <<<'TEXT'
 
 TEXT;
 
-// it('can run init command and download model file', function () {
-//     $this->artisan('smart-pii-redactor:init')->assertSuccessful();
-// });
-
 it('can test the smart pii redactor', function () use ($section1) {
     $smartPiiRedactor = App::make(SmartPiiRedactor::class);
 
     $entities = $smartPiiRedactor->getEntities($section1);
 
-    [$newPrompt, $replacement] = $smartPiiRedactor->maskWithMap($section1, $entities);
+    $replacementKey = Str::random(10);
 
-    dd($newPrompt, $replacement);
+    $newPrompt = $smartPiiRedactor->mask($section1, $entities, $replacementKey);
+
+    $replacement = $smartPiiRedactor->getCacheReplacement($replacementKey);
 
     expect($newPrompt)
         ->toBeString()

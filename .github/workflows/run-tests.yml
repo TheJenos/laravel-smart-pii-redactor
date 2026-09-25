@@ -34,7 +34,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.5
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          extensions: dom, curl, libxml, mbstring, zip, bz2, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           coverage: none
 
       - name: Setup problem matchers
@@ -49,6 +49,19 @@ jobs:
 
       - name: List Installed Dependencies
         run: composer show -D
+
+      # Mitie's own post-install hook only runs when it's the root package, so the native library is fetched here...
+      - name: Install MITIE native library
+        run: php -r "require 'vendor/autoload.php'; Mitie\Vendor::check();"
+
+      - name: Cache NER model
+        uses: actions/cache@v4
+        with:
+          path: src/Models/ner_model.dat
+          key: mitie-ner-model-v0.2
+
+      - name: Download NER model
+        run: vendor/bin/testbench smart-pii-redactor:init
 
       - name: Execute tests
         run: vendor/bin/pest --ci
