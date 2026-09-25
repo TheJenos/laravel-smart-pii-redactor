@@ -72,7 +72,8 @@ jobs:
           coverage: none
 
       - name: Validate composer.json
-        run: composer validate --strict --no-check-lock --no-check-publish
+        # Not --strict: the "version" field this workflow releases from is always reported as a warning...
+        run: composer validate --no-check-lock --no-check-publish
 
       - name: Install dependencies
         uses: ramsey/composer-install@v4
