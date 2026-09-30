@@ -192,6 +192,14 @@ class SmartPiiRedactor
             return ! isset($entity['tag']) || $entity['tag'] !== 'MISC';
         });
 
+        return $this->uniqueEntities($foundEntities);
+    }
+
+    /**
+     * Drop duplicate entities and those contained in another entity, keeping the first occurrence's order.
+     */
+    public function uniqueEntities(array $foundEntities): array
+    {
         $uniqueEntities = [];
         foreach ($foundEntities as $entity) {
             if (! isset($uniqueEntities[$entity['text']])) {
@@ -214,9 +222,7 @@ class SmartPiiRedactor
             }
         }
 
-        $foundEntities = $finalEntities;
-
-        return $foundEntities;
+        return $finalEntities;
     }
 
     public function redact(string $text, array $entities): string

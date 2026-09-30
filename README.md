@@ -97,6 +97,9 @@ Add a provider named `redactor` to `config/ai.php` and point it at the provider 
         'only' => [],
         'except' => [],
 
+        // Remember the entities found in each message and scan only new ones (see below).
+        'incremental' => false,
+
         // Log the raw HTTP traffic with the base provider (see below).
         'log' => env('PII_REDACTOR_LOG', false),
         'log_channel' => null,
@@ -160,6 +163,17 @@ Or make it the default for every agent in `config/ai.php`:
 
 Agents that remember conversations store the **original** prompt and the restored reply. Earlier messages are masked again on every request, so history never reaches the provider unredacted either.
 
+### Incremental detection
+
+By default every request scans the whole conversation, so a long chat or a multi-step tool run sends the same history through the NER model again and again. Set `'incremental' => true` to scan each message only once:
+
+- The entities found in each message are cached, keyed by a hash of the message's text and the `only`/`except` settings.
+- On each request only messages that haven't been seen before are scanned, all in one pass. Earlier messages reuse their cached entities.
+- The entities of all messages are used to mask every message, so a name found earlier is masked in later messages too.
+- Earlier messages keep their placeholders as the conversation grows, which keeps the request prefix stable for provider-side prompt caching.
+
+Each message is scanned on its own instead of with the whole conversation around it, so the NER model has less context and results can differ slightly from the default mode.
+
 ### Tools
 
 Tool call arguments are restored before your tool runs, so tools receive real values. Tool results are masked before they're sent back to the model.
@@ -217,6 +231,7 @@ Messages are prefixed with `[smart-pii-redactor]`. Logs only ever contain the re
 ## Security notes
 
 - **Placeholder maps contain the original PII.** They're written to your default cache store without an expiry, so use a store you'd trust with the raw data, and clear it as your retention policy requires.
+- **Incremental detection caches the detected entities**, which are the original PII, in the default cache store without an expiry, just like placeholder maps.
 - **Only what's detected is masked.** Undetected PII is sent as-is, and system instructions (`instructions()`) aren't scanned.
 - **Attachments aren't scanned.** Files and images are sent to the provider unchanged.
 

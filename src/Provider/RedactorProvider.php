@@ -25,7 +25,7 @@ class RedactorProvider extends Provider implements TextProvider
         $this->provider = clone app(AiManager::class)->textProvider($baseDriver);
 
         if (method_exists($this->provider, 'textGateway')) {
-            $this->provider->useTextGateway(new RedactingTextGateway($this->provider->textGateway(), $this->config));
+            $this->provider->useTextGateway($this->redactingGateway($this->provider->textGateway()));
         }
     }
 
@@ -58,9 +58,19 @@ class RedactorProvider extends Provider implements TextProvider
 
     public function useTextGateway(StepTextGateway $gateway): self
     {
-        $this->provider->useTextGateway(new RedactingTextGateway($gateway, $this->config));
+        $this->provider->useTextGateway($this->redactingGateway($gateway));
 
         return $this;
+    }
+
+    /**
+     * Wrap the gateway in the redacting gateway selected by the configuration.
+     */
+    protected function redactingGateway(StepTextGateway $gateway): RedactingTextGateway
+    {
+        return ($this->config['incremental'] ?? false)
+            ? new IncrementalRedactingTextGateway($gateway, $this->config)
+            : new RedactingTextGateway($gateway, $this->config);
     }
 
     public function textGenerationLoop(): TextGenerationLoop

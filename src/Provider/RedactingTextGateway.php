@@ -181,11 +181,7 @@ class RedactingTextGateway implements StepTextGateway
     {
         $redactor = app(SmartPiiRedactor::class);
 
-        $entities = $redactor->getEntities(
-            implode(PHP_EOL, array_merge(...array_map(fn (Message $message) => $this->textsOf($message), $messages))),
-            $this->config['only'] ?? [],
-            $this->config['except'] ?? [],
-        );
+        $entities = $this->detectEntities($messages);
 
         if (count($entities) === 0) {
             return $messages;
@@ -231,6 +227,20 @@ class RedactingTextGateway implements StepTextGateway
         $this->ensureNothingLeaked($redacted, $entities);
 
         return $redacted;
+    }
+
+    /**
+     * Detect the entities in all of the messages at once.
+     *
+     * @param  Message[]  $messages
+     */
+    protected function detectEntities(array $messages): array
+    {
+        return app(SmartPiiRedactor::class)->getEntities(
+            implode(PHP_EOL, array_merge(...array_map(fn (Message $message) => $this->textsOf($message), $messages))),
+            $this->config['only'] ?? [],
+            $this->config['except'] ?? [],
+        );
     }
 
     /**
